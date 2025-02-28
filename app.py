@@ -23,8 +23,9 @@ REQUIRED_COLUMNS_ISBN = [
     "ISBN13", "TITLE", "AUTHOR", "DISCOUNT", "STOCK", "CUR",
     "DIM1", "DIM2", "DIM3", "WEIGHT", "PUBLISHER", "IMPRINT"
 ]
+# Updated to match the cleaned column name: "EAN #" becomes "EAN"
 REQUIRED_COLUMNS_EAN = [
-    "EAN #", "TITLE", "QTYAV", "CUR", "PRICE", "AUTHOR",
+    "EAN", "TITLE", "QTYAV", "CUR", "PRICE", "AUTHOR",
     "PUBLISHER", "WGT OZS", "LENGTH", "WIDTH", "HEIGHT", "CD"
 ]
 
@@ -43,7 +44,7 @@ def detect_header(file_obj):
     else:
         df = pd.read_excel(file_obj, dtype=str, nrows=20, header=None)
     for i, row in df.iterrows():
-        vals = row.astype(str).str.upper().str.replace(r"[^\w\s]", "", regex=True)
+        vals = row.astype(str).str.upper().str.replace(r"[^\w\s]", "", regex=True).str.strip()
         if any("ISBN13" in v.replace(" ", "") or "EAN" in v.replace(" ", "") for v in vals):
             return i
     raise KeyError("No valid header row found.")
@@ -57,8 +58,8 @@ def process_file(file_obj):
         df = pd.read_csv(file_obj, encoding="ISO-8859-1", dtype=str, errors="replace", header=hdr)
     else:
         df = pd.read_excel(file_obj, dtype=str, header=hdr)
-    # Clean column names
-    df.columns = df.columns.str.strip().str.upper().str.replace(r"[^\w\s]", "", regex=True)
+    # Clean column names, then strip again to remove any extra whitespace after replacement
+    df.columns = df.columns.str.strip().str.upper().str.replace(r"[^\w\s]", "", regex=True).str.strip()
     # Identify the ISBN/EAN column
     c = next((col for col in df.columns if "ISBN13" in col.replace(" ", "") or "EAN" in col.replace(" ", "")), None)
     if not c:
